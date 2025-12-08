@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión Fugazza (Admin)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="gestion">
+
+<header class="topbar">
+    <div class="topbar__logo">
+        <div class="logo-icon">⚙️</div>
+        <div class="logo-text">
+            <h1>Panel de Gestión</h1>
+            <span>Administración del menú</span>
+        </div>
+    </div>
+
+    <nav class="topbar__nav">
+        <a href="index.html" class="nav-link">Volver al Inicio</a>
+    </nav>
+</header>
+
+<main class="layout">
+
+    <!-- LOGIN POR PIN -->
+    <section class="tarjeta tarjeta--grande" id="panel-admin-login">
+        <h2 class="tarjeta__titulo">Acceso administrador</h2>
+        <p class="tarjeta__texto">Ingrese su PIN para modificar el menú y el número de WhatsApp.</p>
+
+        <div class="grupo">
+            <label class="label">PIN de administrador:</label>
+            <input type="password" id="pin-admin" class="input" placeholder="****">
+        </div>
+
+        <button class="btn-secundario" id="btn-validar-pin">Ingresar</button>
+
+        <!--<p class="ayuda">PIN actual: 4321</p>-->
+    </section>
+
+    <!-- PANEL DE GESTIÓN (OCULTO HASTA PIN CORRECTO) -->
+    <section class="tarjeta tarjeta--grande" id="panel-admin" style="display:none;">
+
+        <!-- PIZZAS -->
+        <h2 class="tarjeta__titulo">Gestión de Pizzas</h2>
+
+        <div class="gestion-grid">
+            <div class="grupo">
+                <label class="label">Nombre de la pizza:</label>
+                <input type="text" id="adm-pizza-nombre" class="input">
+            </div>
+
+            <div class="grupo">
+                <label class="label">Precio ($):</label>
+                <input type="number" id="adm-pizza-precio" class="input" min="0" step="10">
+            </div>
+        </div>
+
+        <div class="gestion-grid">
+            <div class="grupo">
+                <label class="label">Descripción:</label>
+                <input type="text" id="adm-pizza-desc" class="input">
+            </div>
+
+            <div class="grupo">
+                <label class="label">Foto:</label>
+                <input type="file" id="adm-pizza-img" accept="image/*">
+                <small id="adm-img-estado" class="ayuda">Sin imagen cargada.</small><br>
+                <button class="btn-secundario btn-secundario--small" id="adm-btn-quitar-img" style="display:none;">
+                    Quitar imagen
+                </button>
+            </div>
+        </div>
+
+        <div class="gestion-grid">
+            <button class="btn-secundario" id="adm-btn-agregar">Agregar pizza</button>
+            <button class="btn-secundario" id="adm-btn-guardar" style="display:none;">Guardar cambios</button>
+            <button class="btn-secundario btn-secundario--small" id="adm-btn-cancelar" style="display:none;">Cancelar</button>
+        </div>
+
+        <h3 class="subtitulo-seccion">Listado de pizzas</h3>
+        <div class="tabla-responsive">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Pizza</th>
+                    <th>Precio</th>
+                    <th>Descripción</th>
+                    <th>Foto</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody id="adm-tabla-pizzas"></tbody>
+            </table>
+        </div>
+
+        <hr class="separador">
+
+        <!-- BEBIDAS -->
+        <h2 class="tarjeta__titulo">Gestión de Bebidas</h2>
+
+        <div class="gestion-grid">
+            <div class="grupo">
+                <label class="label">Nombre:</label>
+                <input type="text" id="adm-bebida-nombre" class="input">
+            </div>
+
+            <div class="grupo">
+                <label class="label">Precio:</label>
+                <input type="number" id="adm-bebida-precio" class="input">
+            </div>
+        </div>
+
+        <button class="btn-secundario" id="adm-btn-agregar-bebida">Agregar bebida</button>
+
+        <h3 class="subtitulo-seccion">Listado de bebidas</h3>
+        <div class="tabla-responsive">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Bebida</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody id="adm-tabla-bebidas"></tbody>
+            </table>
+        </div>
+
+        <hr class="separador">
+
+        <!-- CONFIGURACIÓN DE TELÉFONO -->
+        <h2 class="tarjeta__titulo">Configuración de WhatsApp</h2>
+        <p class="tarjeta__texto">
+            Número al que llegarán los pedidos desde la pantalla principal.
+        </p>
+
+        <div class="gestion-grid">
+            <div class="grupo">
+                <label class="label">Teléfono (sin + ni espacios):</label>
+                <input type="text" id="conf-telefono" class="input" placeholder="5493834284204">
+            </div>
+            <div class="grupo">
+                <button class="btn-secundario" id="conf-btn-guardar">Guardar teléfono</button>
+            </div>
+        </div>
+
+        <p class="ayuda">
+            Formato recomendado: 54 + código de área + número. Ej: 5493834284204.
+        </p>
+
+    </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

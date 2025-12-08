@@ -1,0 +1,540 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fdf4e3;
+    color: #3a2415;
+}
+
+/* TOPBAR */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #c94c3b;
+    color: #fff;
+    padding: 10px 20px;
+}
+
+.topbar__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fdd692;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.logo-text h1 {
+    font-size: 1.3rem;
+    line-height: 1.1;
+}
+
+.logo-text span {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.topbar__nav {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.nav-link {
+    color: #ffe8d2;
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 6px 10px;
+    border-radius: 999px;
+}
+
+.nav-link--active,
+.nav-link:hover {
+    background: #a73528;
+}
+
+.topbar__right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    font-size: 0.8rem;
+}
+
+.mini-indicador {
+    background: #fdd692;
+    color: #8a4326;
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+.mini-indicador--sec {
+    background: #e0a662;
+}
+
+/* LAYOUT */
+
+.layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    padding: 16px 20px 60px;
+}
+
+.sidebar {
+    background: #fde3c8;
+    border-radius: 20px;
+    padding: 16px;
+}
+
+.sidebar__titulo {
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+.sidebar__btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: transparent;
+    color: #8a4326;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-bottom: 6px;
+}
+
+.sidebar__btn--activo,
+.sidebar__btn:hover {
+    background: #c94c3b;
+    color: #fff;
+}
+
+.contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* TARJETAS */
+
+.tarjeta {
+    background: #fff7eb;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.tarjeta--grande {
+    padding: 18px;
+}
+
+.tarjeta__titulo {
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+}
+
+.tarjeta__texto {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.tarjeta__encabezado-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.subtitulo-seccion {
+    font-size: 1rem;
+    margin: 8px 0 4px;
+    color: #8a4326;
+}
+
+.subtitulo-seccion--bebidas {
+    margin-top: 16px;
+}
+
+.separador {
+    border: none;
+    border-top: 1px solid #f1c9a5;
+    margin: 10px 0;
+}
+
+/* CARDS */
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cards-grid--bebidas {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.pizza-card,
+.bebida-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.pizza-card__img,
+.bebida-card__img {
+    height: 100px;
+    background: #f8c26a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.pizza-card__img img,
+.bebida-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pizza-card__body,
+.bebida-card__body {
+    padding: 8px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.pizza-card__nombre,
+.bebida-card__nombre {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.pizza-card__precio,
+.bebida-card__precio {
+    font-size: 0.9rem;
+    color: #b24833;
+}
+
+.pizza-card__descripcion {
+    font-size: 0.8rem;
+    color: #6f4a30;
+}
+
+.pizza-card__btn,
+.bebida-card__btn {
+    margin-top: 4px;
+    align-self: flex-start;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: none;
+    background: #c94c3b;
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.pizza-card__btn:hover,
+.bebida-card__btn:hover {
+    background: #a73528;
+}
+
+/* GESTIÓN */
+
+.gestion-contenido {
+    margin-top: 10px;
+}
+
+.gestion-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.gestion-grid .grupo {
+    flex: 1 1 220px;
+}
+
+/* FORMULARIOS */
+
+.grupo {
+    margin-bottom: 10px;
+}
+
+.label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+}
+
+.input,
+.textarea {
+    width: 100%;
+    padding: 7px 8px;
+    border-radius: 10px;
+    border: 1px solid #d1a482;
+    font-size: 0.9rem;
+}
+
+.input:focus,
+.textarea:focus {
+    outline: none;
+    border-color: #c94c3b;
+    box-shadow: 0 0 0 1px rgba(201,76,59,0.2);
+}
+
+.opcion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.texto-resaltado {
+    color: #c94c3b;
+    font-weight: 600;
+}
+
+/* TABLAS CAJA */
+
+.tabla-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.tabla thead {
+    background: #d46a4e;
+    color: #fff;
+}
+
+.tabla th,
+.tabla td {
+    padding: 8px;
+    border-bottom: 1px solid #f1c9a5;
+    text-align: left;
+}
+
+.tabla input[type="number"] {
+    width: 70px;
+    padding: 4px;
+}
+
+.btn-eliminar,
+.btn-editar {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #c62828;
+    background: #ffebee;
+    color: #c62828;
+    cursor: pointer;
+    margin-right: 4px;
+}
+
+.btn-editar {
+    border-color: #8e6b28;
+    background: #fff3cd;
+    color: #8e6b28;
+}
+
+.btn-eliminar:hover {
+    background: #ffcdd2;
+}
+
+.btn-editar:hover {
+    background: #ffe08a;
+}
+
+/* BOTONES PRINCIPALES */
+
+.btn-whatsapp {
+    display: inline-block;
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: none;
+    background: #25d366;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.btn-whatsapp:hover {
+    filter: brightness(0.95);
+}
+
+.btn-secundario {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid #d1a482;
+    background: #ffe4c6;
+    color: #8a4326;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.btn-secundario:hover {
+    background: #ffd3a4;
+}
+
+.btn-pin {
+    white-space: nowrap;
+}
+
+.btn-secundario--small {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+}
+
+
+/* TOTAL Y AYUDA */
+
+.total {
+    margin-top: 8px;
+    font-weight: 700;
+    text-align: right;
+    font-size: 0.95rem;
+}
+
+.ayuda {
+    font-size: 0.8rem;
+    color: #7c5437;
+    margin-top: 6px;
+}
+
+/* FOOTER */
+
+.footer {
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    color: #7c5437;
+}
+
+/* WHATSAPP FLOAT */
+
+.whatsapp-float {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #25d366;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 28px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* IMPRESIÓN TICKET */
+
+@media print {
+
+    body * { visibility: hidden; }
+
+    #ticket, #ticket * { visibility: visible; }
+
+    @page {
+        size: 58mm auto;
+        margin: 0;
+    }
+
+    #ticket {
+        position: fixed;
+        left: 0;
+        top: 0;
+
+        width: 48mm;            
+        padding: 2mm;
+
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 18px;         
+        font-weight: 900;        
+        line-height: 1.25;
+
+        color: #000000;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+
+        image-rendering: pixelated;
+    }
+
+    #ticket div {
+        margin: 0 0 2px 0;
+    }
+
+    .t-header {
+        font-size: 20px;
+        font-weight: 900;
+        text-align: center;
+    }
+
+    .t-sub {
+        font-weight: 900;
+    }
+}
+
+
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        order: -1;
+    }
+}
+
+/* ===== AJUSTES PARA PÁGINA DE GESTIÓN ===== */
+
+body[data-page="gestion"] .layout {
+    grid-template-columns: 1fr;   /* una sola columna, ocupa todo */
+}
+
+body[data-page="gestion"] .tarjeta--grande {
+    max-width: 1100px;            /* si quiere, puede subir este valor */
+    margin: 0 auto;               /* centrada y más ancha */
+}
+
+body[data-page="gestion"] {
+    background: #fdf4e3;
+}
+

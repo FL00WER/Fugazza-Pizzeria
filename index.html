@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pizzería Fugazza - Pedidos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="index">
+
+<header class="topbar">
+    <div class="topbar__logo">
+        <div class="logo-icon">🍕</div>
+        <div class="logo-text">
+            <h1>Pizzería Fugazza</h1>
+            <span>Gestión de pedidos</span>
+        </div>
+    </div>
+
+    <nav class="topbar__nav">
+        <a href="#seccion-pizzas" class="nav-link nav-link--active">Inicio</a>
+        <a href="gestion.html" class="nav-link">Gestión</a>
+    </nav>
+
+    <div class="topbar__right">
+        <span class="mini-indicador" id="mini-carrito">0 ítems</span>
+        <span class="mini-indicador mini-indicador--sec">Modo pedido</span>
+    </div>
+</header>
+
+<main class="layout">
+
+    <!-- LATERAL IZQUIERDO -->
+    <aside class="sidebar">
+        <h2 class="sidebar__titulo">Categorías</h2>
+        <button class="sidebar__btn sidebar__btn--activo"
+                onclick="document.querySelector('#seccion-pizzas').scrollIntoView({behavior:'smooth'});">
+            Pizzas
+        </button>
+        <button class="sidebar__btn"
+                onclick="document.querySelector('#seccion-bebidas').scrollIntoView({behavior:'smooth'});">
+            Bebidas
+        </button>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <section class="contenido">
+
+        <!-- PIZZAS -->
+        <section class="tarjeta tarjeta--grande" id="seccion-pizzas">
+            <h2 class="tarjeta__titulo">Pizzas</h2>
+            <p class="tarjeta__texto">
+                Seleccione las pizzas que el cliente desea. Luego complete forma de pago y confirme.
+            </p>
+
+            <div id="lista-pizzas-cards" class="cards-grid">
+                <!-- JS -->
+            </div>
+        </section>
+
+        <!-- BEBIDAS -->
+        <section class="tarjeta tarjeta--grande" id="seccion-bebidas">
+            <h2 class="tarjeta__titulo">Bebidas</h2>
+            <p class="tarjeta__texto">
+                Puede sumar bebidas al pedido desde aquí.
+            </p>
+
+            <div id="lista-bebidas-cards" class="cards-grid cards-grid--bebidas">
+                <!-- JS -->
+            </div>
+        </section>
+
+        <!-- RESUMEN PARA CAJA (SIN EDITAR / ELIMINAR) -->
+        <section class="tarjeta">
+            <h2 class="tarjeta__titulo">Resumen para caja</h2>
+            <p class="tarjeta__texto">
+                Aquí el encargado controla cantidades y totales antes de emitir ticket o enviar el pedido por WhatsApp.
+            </p>
+
+            <h3 class="subtitulo-seccion">Pizzas</h3>
+            <div class="tabla-responsive">
+                <table class="tabla">
+                    <thead>
+                    <tr>
+                        <th>Pizza</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tabla-pizzas">
+                    <!-- JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="subtitulo-seccion subtitulo-seccion--bebidas">Bebidas</h3>
+            <div class="tabla-responsive">
+                <table class="tabla tabla--bebidas">
+                    <thead>
+                    <tr>
+                        <th>Bebida</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tabla-bebidas">
+                    <!-- JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="total" id="texto-total">Total: $ 0.00</p>
+        </section>
+
+        <!-- DATOS DEL PEDIDO -->
+        <section class="tarjeta" id="seccion-datos">
+            <h2 class="tarjeta__titulo">Datos del pedido</h2>
+
+            <div class="grupo">
+                <label for="nombre-cliente" class="label">Nombre del cliente (opcional):</label>
+                <input type="text" id="nombre-cliente" class="input" placeholder="Ej: Juan Pérez">
+            </div>
+
+            <div class="grupo">
+                <p class="label">Forma de pago:</p>
+                <label class="opcion">
+                    <input type="radio" name="pago" value="Contado (efectivo/transferencia)" checked>
+                    Contado (efectivo / transferencia)
+                </label>
+                <label class="opcion">
+                    <input type="radio" name="pago" value="Tarjeta (débito/crédito)">
+                    Tarjeta (débito / crédito) <span class="texto-resaltado">(+10% recargo)</span>
+                </label>
+            </div>
+
+            <div class="grupo">
+                <label for="comentarios" class="label">Comentarios (opcional):</label>
+                <textarea id="comentarios" class="textarea" rows="3"
+                          placeholder="Sin aceitunas, agregar servilletas, enviar a las 21 hs, etc."></textarea>
+            </div>
+
+            <div class="botones-acciones">
+                <button class="btn-whatsapp" id="btn-whatsapp">
+                    Enviar pedido por WhatsApp
+                </button>
+                <button class="btn-secundario" id="btn-imprimir">
+                    Imprimir ticket
+                </button>
+            </div>
+
+            <p class="ayuda">
+                El pedido se enviará al WhatsApp configurado en la pantalla de Gestión.
+            </p>
+        </section>
+    </section>
+</main>
+
+<!-- Botón flotante de WhatsApp (se actualiza por JS con el teléfono configurado) -->
+<a href="#" target="_blank" class="whatsapp-float">
+    🟢
+</a>
+
+<footer class="footer">
+    <p>© 2025 Pizzería Fugazza</p>
+</footer>
+
+<!-- Ticket solo para impresión -->
+<div id="ticket" style="display:none;"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
