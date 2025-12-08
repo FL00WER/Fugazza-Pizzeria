@@ -132,6 +132,24 @@
                     Tarjeta (débito / crédito) <span class="texto-resaltado">(+10% recargo)</span>
                 </label>
             </div>
+            
+            <div class="grupo">
+                <p class="label">Tipo de entrega:</p>
+                <label class="opcion">
+                    <input type="radio" name="entrega" value="Retira en local" checked>
+                    Retira en local
+                </label>
+                <label class="opcion">
+                    <input type="radio" name="entrega" value="Envío / Delivery">
+                    Envío / Delivery
+                </label>
+            </div>
+
+            <div class="grupo">
+                <label for="costo-envio" class="label">Costo de envío ($):</label>
+                <input type="number" id="costo-envio" class="input" min="0" step="10"
+                    placeholder="Ej: 800" disabled>
+            </div>
 
             <div class="grupo">
                 <label for="comentarios" class="label">Comentarios (opcional):</label>

@@ -71,6 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const ticketDiv    = document.getElementById("ticket");
     const btnsPago     = document.querySelectorAll('input[name="pago"]');
     const waFloat      = document.querySelector(".whatsapp-float");
+    const btnsEntrega = document.querySelectorAll('input[name="entrega"]');
+    const inputEnvio  = document.getElementById("costo-envio");
+
 
     // Teléfono configurado en gestión
     if (waFloat) {
@@ -165,11 +168,14 @@ document.addEventListener("DOMContentLoaded", () => {
             tr.dataset.nombre = item.nombre;
             tr.dataset.precio = item.precio;
 
+            const step = item.tipo === "pizza" ? "0.5" : "1";
+
             tr.innerHTML = `
                 <td>${item.nombre}</td>
                 <td>$ ${item.precio}</td>
-                <td><input type="number" class="cantidad" min="0" value="${item.cantidad}"></td>
+                <td><input type="number" class="cantidad" min="0" step="${step}" value="${item.cantidad}"></td>
             `;
+
 
             if (item.tipo === "pizza") {
                 tablaPizzas.appendChild(tr);
@@ -193,22 +199,40 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const pagoSel = document.querySelector('input[name="pago"]:checked').value;
-        let recargo = 0;
-        let total = subtotal;
 
-        if (pagoSel === "Tarjeta (débito/crédito)") {
-            recargo = subtotal * 0.10;
-            total = subtotal + recargo;
+        // Tipo de entrega y costo de envío
+        const entregaSel = document.querySelector('input[name="entrega"]:checked')?.value || "Retira en local";
+        let costoEnvio = 0;
+        if (entregaSel === "Envío / Delivery") {
+            costoEnvio = parseFloat(inputEnvio.value) || 0;
         }
 
-        textoTotal.textContent =
-            `Total: $ ${total.toFixed(2)} — Subtotal: $ ${subtotal.toFixed(2)}` +
-            (recargo > 0 ? ` | Recargo 10%` : "");
+        // Recargo solo sobre productos (no sobre envío)
+        let recargo = 0;
+        if (pagoSel === "Tarjeta (débito/crédito)") {
+            recargo = subtotal * 0.10;
+        }
 
+        const total = subtotal + recargo + costoEnvio;
+
+        let texto = `Total: $ ${total.toFixed(2)} — Subtotal: $ ${subtotal.toFixed(2)}`;
+        if (recargo > 0) texto += ` | Recargo 10%: $ ${recargo.toFixed(2)}`;
+        if (costoEnvio > 0) texto += ` | Envío: $ ${costoEnvio.toFixed(2)}`;
+
+        textoTotal.textContent = texto;
         miniCarrito.textContent = cantidadItems === 1 ? "1 ítem" : `${cantidadItems} ítems`;
 
-        return { subtotal, recargo, total, pagoSel, cantidadItems };
+        return {
+            subtotal,
+            recargo,
+            envio: costoEnvio,
+            total,
+            pagoSel,
+            cantidadItems,
+            tipoEntrega: entregaSel
+        };
     }
+
 
     // ---------- eventos cantidades en resumen ----------
     function actualizarCantidadDesdeTabla(e) {
@@ -237,6 +261,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ---------- cambio de forma de pago ----------
     btnsPago.forEach(r => r.addEventListener("change", calcularTotal));
+    btnsEntrega.forEach(r => {
+        r.addEventListener("change", () => {
+            if (r.value === "Envío / Delivery" && r.checked) {
+                inputEnvio.disabled = false;
+            } else if (r.value === "Retira en local" && r.checked) {
+                inputEnvio.disabled = true;
+                inputEnvio.value = "";
+            }
+            calcularTotal();
+        });
+    });
+
+inputEnvio.addEventListener("input", calcularTotal);
+
 
     // ---------- Añadir desde cards ----------
     cardsPizzas.addEventListener("click", e => {
@@ -267,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ---------- WhatsApp ----------
     btnWhatsApp.addEventListener("click", () => {
-        const { subtotal, recargo, total, pagoSel, cantidadItems } = calcularTotal();
+        const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega } = calcularTotal();
         if (cantidadItems === 0) {
             alert("Por favor, seleccione al menos un producto.");
             return;
@@ -283,7 +321,8 @@ document.addEventListener("DOMContentLoaded", () => {
         Object.values(carrito)
             .filter(i => i.tipo === "pizza" && i.cantidad > 0)
             .forEach(i => {
-                msg += `- ${i.nombre} x${i.cantidad} = $ ${i.precio * i.cantidad}\n`;
+                const cantTexto = (i.cantidad === 0.5) ? "1/2" : i.cantidad;
+                msg += `- ${i.nombre} x${cantTexto} = $ ${i.precio * i.cantidad}\n`;
             });
 
         msg += "\nBebidas:\n";
@@ -294,8 +333,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
         msg += `\nForma de pago: ${pagoSel}\n`;
+        msg += `Tipo de entrega: ${tipoEntrega}\n`;
         msg += `Subtotal: $ ${subtotal.toFixed(2)}\n`;
         if (recargo > 0) msg += `Recargo (10%): $ ${recargo.toFixed(2)}\n`;
+        if (envio > 0) msg += `Envío: $ ${envio.toFixed(2)}\n`;
         msg += `TOTAL: $ ${total.toFixed(2)}\n`;
 
         const comentarios = document.getElementById("comentarios").value.trim();
@@ -307,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ---------- Imprimir ticket ----------
     btnImprimir.addEventListener("click", () => {
-        const { subtotal, recargo, total, pagoSel, cantidadItems } = calcularTotal();
+        const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega } = calcularTotal();
         if (cantidadItems === 0) {
             alert("Por favor, seleccione al menos un producto.");
             return;
@@ -334,7 +375,8 @@ document.addEventListener("DOMContentLoaded", () => {
         Object.values(carrito)
             .filter(i => i.tipo === "pizza" && i.cantidad > 0)
             .forEach(i => {
-                lineas.push(`${i.cantidad}x ${i.nombre}`);
+                const cantTexto = (i.cantidad === 0.5) ? "1/2" : i.cantidad;
+                lineas.push(`${cantTexto}x ${i.nombre}`);
                 lineas.push(`   $${i.precio} c/u -> $${i.precio * i.cantidad}`);
             });
         lineas.push("Bebidas:");
@@ -346,8 +388,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         lineas.push("---------------------------");
         lineas.push(`Pago: ${pagoSel}`);
-        lineas.push(`Subtotal: $${subtotal.toFixed(2)}`);
-        if (recargo > 0) lineas.push(`Recargo 10%: $${recargo.toFixed(2)}`);
+        lineas.push(`Entrega: ${tipoEntrega}`);
+        if (envio > 0) lineas.push(`Envío: $${envio.toFixed(2)}`);
         lineas.push(`TOTAL: $${total.toFixed(2)}`);
         if (comentarios) {
             lineas.push("---------------------------");
