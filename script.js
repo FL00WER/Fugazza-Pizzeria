@@ -348,6 +348,13 @@ inputEnvio.addEventListener("input", calcularTotal);
 
     // ---------- Imprimir ticket ----------
     btnImprimir.addEventListener("click", () => {
+        const pin = prompt("Ingrese PIN de administrador para imprimir:");
+
+        if (pin !== "4321") {
+            alert("PIN incorrecto. No tiene permiso para imprimir el ticket.");
+            return;
+        }
+
         const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega } = calcularTotal();
         if (cantidadItems === 0) {
             alert("Por favor, seleccione al menos un producto.");
