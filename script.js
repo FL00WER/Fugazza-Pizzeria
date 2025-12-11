@@ -438,14 +438,12 @@ function initIndex() {
             .forEach(i => {
                 const etiqueta = i.etiqueta ? ` (${i.etiqueta})` : "";
                 lineas.push(`${i.cantidad}x ${i.nombre}${etiqueta}`);
-                lineas.push(`   $${i.precio} c/u -> $${i.precio * i.cantidad}`);
             });
         lineas.push("Bebidas:");
         Object.values(carrito)
             .filter(i => i.tipo === "bebida" && i.cantidad > 0)
             .forEach(i => {
                 lineas.push(`${i.cantidad}x ${i.nombre}`);
-                lineas.push(`   $${i.precio} c/u -> $${i.precio * i.cantidad}`);
             });
         lineas.push("---------------------------");
         lineas.push(`Pago: ${pagoSel}`);
