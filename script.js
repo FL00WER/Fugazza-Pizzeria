@@ -13,10 +13,8 @@ const PHONE_KEY   = "fugazza_whatsapp_phone_cache";
 const DEFAULT_PHONE = "5493834284204";
 const PIN_GESTION   = "4321";
 
-// PROMO 2: cuántas pizzas permite elegir
-const PROMO2_MAX_PIZZAS = 2;
-// Nombre exacto del ítem promo en el menú
-const PROMO2_NOMBRE = "PROMO 2";
+// PROMOS: cantidad de items a elegir (pizzas o calzones)
+const PROMO_ITEMS_A_ELEGIR = 2;
 
 let menuPizzas  = [];
 let menuBebidas = [];
@@ -237,22 +235,39 @@ function initIndex() {
     actualizarResumen();
   }
 
-  // -------- PROMO 2 selector (por prompt) --------
+  // -------- PROMOS (genéricas) --------
 
-  function seleccionarPizzasParaPromo2() {
-    const pizzasDisponibles = menuPizzas
-      .filter(p => (p.categoria || "pizza").toLowerCase() === "pizza")
-      .map(p => p.nombre);
+  function pedirNumeroPromo() {
+    const n = prompt("Ingrese el número de la promo (Ej: 1, 2, 3):");
+    if (!n) return null;
+    const num = parseInt(n.trim(), 10);
+    if (isNaN(num) || num <= 0) {
+      alert("Número inválido.");
+      return null;
+    }
+    return num;
+  }
 
-    if (!pizzasDisponibles.length) {
-      alert("No hay pizzas disponibles para elegir.");
+  // Devuelve array con 2 seleccionados entre pizzas y calzones
+  function seleccionar2ItemsPromo() {
+    const opciones = menuPizzas
+      .filter(p => {
+        const c = (p.categoria || "pizza").toLowerCase();
+        return c === "pizza" || c === "calzone";
+      })
+      .map(p => ({ nombre: p.nombre, categoria: (p.categoria || "pizza").toLowerCase() }));
+
+    if (!opciones.length) {
+      alert("No hay pizzas o calzones para elegir.");
       return null;
     }
 
-    const listado = pizzasDisponibles.map((n, i) => `${i + 1}) ${n}`).join("\n");
+    const listado = opciones
+      .map((o, i) => `${i + 1}) ${o.nombre}${o.categoria === "calzone" ? " (Calzone)" : ""}`)
+      .join("\n");
 
     const entrada = prompt(
-      `PROMO 2: Seleccione ${PROMO2_MAX_PIZZAS} pizzas (por número, separado por coma).\n\n${listado}\n\nEj: 1,3`
+      `Seleccione ${PROMO_ITEMS_A_ELEGIR} items (pizzas/calzones) por número, separado por coma.\n\n${listado}\n\nEj: 1,3`
     );
 
     if (!entrada) return null;
@@ -262,21 +277,44 @@ function initIndex() {
       .map(x => parseInt(x.trim(), 10))
       .filter(n => !isNaN(n))
       .map(n => n - 1)
-      .filter(i => i >= 0 && i < pizzasDisponibles.length);
+      .filter(i => i >= 0 && i < opciones.length);
 
-    // Tomamos solo las primeras PROMO2_MAX_PIZZAS válidas
     const seleccion = [];
     for (const i of indices) {
-      if (seleccion.length >= PROMO2_MAX_PIZZAS) break;
-      seleccion.push(pizzasDisponibles[i]);
+      if (seleccion.length >= PROMO_ITEMS_A_ELEGIR) break;
+      seleccion.push(opciones[i].nombre);
     }
 
-    if (seleccion.length !== PROMO2_MAX_PIZZAS) {
-      alert(`Debe elegir exactamente ${PROMO2_MAX_PIZZAS} pizzas para la PROMO 2.`);
+    if (seleccion.length !== PROMO_ITEMS_A_ELEGIR) {
+      alert(`Debe elegir exactamente ${PROMO_ITEMS_A_ELEGIR} opciones.`);
       return null;
     }
 
-    return seleccion; // array de nombres
+    return seleccion;
+  }
+
+  function preguntarSiLlevaBebida() {
+    return confirm("¿La promo lleva bebida?");
+  }
+
+  function elegirBebida() {
+    if (!menuBebidas.length) {
+      alert("No hay bebidas cargadas para elegir.");
+      return null;
+    }
+
+    const listado = menuBebidas.map((b, i) => `${i + 1}) ${b.nombre} - $${b.precio}`).join("\n");
+    const entrada = prompt(`Seleccione la bebida por número:\n\n${listado}\n\nEj: 1`);
+
+    if (!entrada) return null;
+
+    const idx = parseInt(entrada.trim(), 10) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= menuBebidas.length) {
+      alert("Selección inválida.");
+      return null;
+    }
+
+    return menuBebidas[idx];
   }
 
   // -------- Carrito --------
@@ -288,9 +326,7 @@ function initIndex() {
       carrito[clave] = { tipo, nombre, precio, etiqueta, cantidad: 0, detalle: null };
     }
 
-    if (detalle) {
-      carrito[clave].detalle = detalle;
-    }
+    if (detalle) carrito[clave].detalle = detalle;
 
     carrito[clave].cantidad++;
     actualizarResumen();
@@ -308,10 +344,11 @@ function initIndex() {
 
       let nombreMostrar = item.nombre;
 
-      // Visual de resumen (puede mostrar 1/2)
       if (item.tipo === "pizza_media") nombreMostrar += " (1/2)";
-      if (item.tipo === "pizza_entera" && item.nombre === PROMO2_NOMBRE && Array.isArray(item.detalle)) {
-        nombreMostrar += ` [${item.detalle.join(" + ")}]`;
+
+      // Mostrar detalle de promo en el resumen (si existe)
+      if (item.detalle && item.detalle.numero) {
+        nombreMostrar += ` [PROMO ${item.detalle.numero}: ${item.detalle.incluye?.join(" + ") || ""}]`;
       }
 
       tr.innerHTML = `
@@ -417,16 +454,37 @@ function initIndex() {
         ? parseFloat(card.dataset.precioMedia)
         : parseFloat(card.dataset.precioEntera);
 
-      // ✅ CASO ESPECIAL: PROMO 2
-      if (nombre === PROMO2_NOMBRE) {
-        const seleccion = seleccionarPizzasParaPromo2();
-        if (!seleccion) return; // canceló o inválido
+      // Detectar categoría desde el menú (por nombre)
+      const prod = menuPizzas.find(x => x.nombre === nombre);
+      const categoria = (prod?.categoria || "pizza").toLowerCase();
 
-        // claveExtra para permitir varias PROMO 2 con combinaciones distintas
-        const claveExtra = seleccion.join("|");
+      // ✅ PROMO genérica
+      if (categoria === "promo") {
+        const numeroPromo = pedirNumeroPromo();
+        if (!numeroPromo) return;
 
-        // etiqueta no se usa en ticket como pidió su jefe, pero la dejamos vacía
-        agregarAlCarrito(tipo, nombre, precio, "", seleccion, claveExtra);
+        const seleccion = seleccionar2ItemsPromo();
+        if (!seleccion) return;
+
+        let bebidaElegida = null;
+        if (preguntarSiLlevaBebida()) {
+          bebidaElegida = elegirBebida();
+          if (!bebidaElegida) return;
+        }
+
+        const detallePromo = {
+          numero: numeroPromo,
+          incluye: seleccion,
+          bebida: bebidaElegida ? bebidaElegida.nombre : null
+        };
+
+        const claveExtra = `promo${numeroPromo}|${seleccion.join("|")}|${detallePromo.bebida || "sinbebida"}`;
+
+        agregarAlCarrito(tipo, nombre, precio, "", detallePromo, claveExtra);
+
+        if (bebidaElegida) {
+          agregarAlCarrito("bebida", bebidaElegida.nombre, parseFloat(bebidaElegida.precio));
+        }
         return;
       }
 
@@ -482,8 +540,15 @@ function initIndex() {
         const nombreTicket = nombreParaTicket(i);
         msg += `- ${nombreTicket} x${i.cantidad}\n`;
 
-        if (i.nombre === PROMO2_NOMBRE && Array.isArray(i.detalle)) {
-          msg += `  Incluye: ${i.detalle.join(", ")}\n`;
+        // ✅ Promo con detalle
+        if (i.detalle && i.detalle.numero) {
+          msg += `  PROMO N° ${i.detalle.numero}\n`;
+          if (Array.isArray(i.detalle.incluye)) {
+            msg += `  Incluye: ${i.detalle.incluye.join(", ")}\n`;
+          }
+          if (i.detalle.bebida) {
+            msg += `  Bebida: ${i.detalle.bebida}\n`;
+          }
         }
       });
 
@@ -540,15 +605,18 @@ function initIndex() {
     Object.values(carrito)
       .filter(i => (i.tipo === "pizza_entera" || i.tipo === "pizza_media") && i.cantidad > 0)
       .forEach(i => {
-        // ✅ Regla solicitada por su jefe:
-        // entera => solo nombre / media => nombre + " 1/2"
         const nombreTicket = nombreParaTicket(i);
-
         lineas.push(`${i.cantidad}x ${nombreTicket}`);
 
-        // ✅ PROMO 2: imprimir pizzas seleccionadas
-        if (i.nombre === PROMO2_NOMBRE && Array.isArray(i.detalle)) {
-          i.detalle.forEach(pz => lineas.push(`  - ${pz}`));
+        // ✅ Promo con detalle
+        if (i.detalle && i.detalle.numero) {
+          lineas.push(`  PROMO N° ${i.detalle.numero}`);
+          if (Array.isArray(i.detalle.incluye)) {
+            i.detalle.incluye.forEach(x => lineas.push(`  - ${x}`));
+          }
+          if (i.detalle.bebida) {
+            lineas.push(`  Bebida: ${i.detalle.bebida}`);
+          }
         }
       });
 
