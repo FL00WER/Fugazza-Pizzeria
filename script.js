@@ -157,7 +157,6 @@ function initIndex() {
   if (waFloat) waFloat.href = `https://wa.me/${telefono}`;
 
   // Carrito: clave -> item
-  // item: { tipo, nombre, precio, etiqueta, cantidad, detalle }
   let carrito = {};
 
   // -------- Cards --------
@@ -248,7 +247,6 @@ function initIndex() {
     return num;
   }
 
-  // Devuelve array con 2 seleccionados entre pizzas y calzones
   function seleccionar2ItemsPromo() {
     const opciones = menuPizzas
       .filter(p => {
@@ -528,11 +526,11 @@ function initIndex() {
 
     // --- LIMPIEZA DE TEXTOS PARA EL MENSAJE ---
     let pagoCorto = pagoSel;
-    if (pagoSel.includes("Contado")) pagoCorto = "Efectivo/Transferencia"; // Quita "Contado"
-    if (pagoSel.includes("Tarjeta")) pagoCorto = "Tarjeta"; // Quita "(débito...)"
+    if (pagoSel.includes("Contado")) pagoCorto = "Efectivo/Transferencia";
+    if (pagoSel.includes("Tarjeta")) pagoCorto = "Tarjeta";
 
     let entregaCorto = tipoEntrega;
-    if (tipoEntrega.includes("Envío")) entregaCorto = "Envío"; // Quita "/ Delivery"
+    if (tipoEntrega.includes("Envío")) entregaCorto = "Envío";
     // -------------------------------------------
 
     const numPedido = obtenerNumeroPedido();
@@ -571,7 +569,6 @@ function initIndex() {
         });
     }
 
-    // Usamos las variables "Cortas" aquí
     msg += `\nForma de pago: ${pagoCorto}\n`;
     msg += `Tipo de entrega: ${entregaCorto}\n`;
     
@@ -586,7 +583,6 @@ function initIndex() {
     window.open(url, "_blank");
   });
 
-  // Imprimir ticket (con PIN)
   // Imprimir ticket (con PIN)
   btnImprimir.addEventListener("click", () => {
     const pin = prompt("Ingrese PIN de administrador para imprimir:");
@@ -661,7 +657,6 @@ function initIndex() {
     }
 
     lineas.push("---------------------------");
-    // Usamos las variables "Cortas" aquí
     lineas.push(`Pago: ${pagoCorto}`);
     lineas.push(`Entrega: ${entregaCorto}`);
     
@@ -685,6 +680,10 @@ function initIndex() {
     window.print();
     setTimeout(() => { ticketDiv.style.display = "none"; }, 400);
   });
+
+  // Inicio
+  renderIndexMenu();
+}
 
 // ================== GESTIÓN ==================
 
