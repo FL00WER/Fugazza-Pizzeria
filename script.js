@@ -526,6 +526,15 @@ function initIndex() {
       return;
     }
 
+    // --- LIMPIEZA DE TEXTOS PARA EL MENSAJE ---
+    let pagoCorto = pagoSel;
+    if (pagoSel.includes("Contado")) pagoCorto = "Efectivo/Transferencia"; // Quita "Contado"
+    if (pagoSel.includes("Tarjeta")) pagoCorto = "Tarjeta"; // Quita "(débito...)"
+
+    let entregaCorto = tipoEntrega;
+    if (tipoEntrega.includes("Envío")) entregaCorto = "Envío"; // Quita "/ Delivery"
+    // -------------------------------------------
+
     const numPedido = obtenerNumeroPedido();
     let msg = `🍕 Pizzería Fugazza - Pedido N° ${numPedido}\n\n`;
 
@@ -538,9 +547,10 @@ function initIndex() {
       .filter(i => (i.tipo === "pizza_entera" || i.tipo === "pizza_media") && i.cantidad > 0)
       .forEach(i => {
         const nombreTicket = nombreParaTicket(i);
-        msg += `- ${nombreTicket} x${i.cantidad}\n`;
+        const cantStr = i.cantidad > 1 ? ` x${i.cantidad}` : "";
+        
+        msg += `- ${nombreTicket}${cantStr}\n`;
 
-        // ✅ Promo con detalle
         if (i.detalle && i.detalle.numero) {
           msg += `  PROMO N° ${i.detalle.numero}\n`;
           if (Array.isArray(i.detalle.incluye)) {
@@ -552,15 +562,19 @@ function initIndex() {
         }
       });
 
-    msg += "\nBebidas:\n";
-    Object.values(carrito)
-      .filter(i => i.tipo === "bebida" && i.cantidad > 0)
-      .forEach(i => {
-        msg += `- ${i.nombre} x${i.cantidad}\n`;
-      });
+    const listaBebidas = Object.values(carrito).filter(i => i.tipo === "bebida" && i.cantidad > 0);
+    if (listaBebidas.length > 0) {
+        msg += "\nBebidas:\n";
+        listaBebidas.forEach(i => {
+            const cantStr = i.cantidad > 1 ? ` x${i.cantidad}` : "";
+            msg += `- ${i.nombre}${cantStr}\n`;
+        });
+    }
 
-    msg += `\nForma de pago: ${pagoSel}\n`;
-    msg += `Tipo de entrega: ${tipoEntrega}\n`;
+    // Usamos las variables "Cortas" aquí
+    msg += `\nForma de pago: ${pagoCorto}\n`;
+    msg += `Tipo de entrega: ${entregaCorto}\n`;
+    
     msg += `Subtotal: $ ${subtotal.toFixed(2)}\n`;
     if (recargo > 0) msg += `Recargo (10%): $ ${recargo.toFixed(2)}\n`;
     if (envio > 0) msg += `Envío: $ ${envio.toFixed(2)}\n`;
@@ -572,6 +586,7 @@ function initIndex() {
     window.open(url, "_blank");
   });
 
+  // Imprimir ticket (con PIN)
   // Imprimir ticket (con PIN)
   btnImprimir.addEventListener("click", () => {
     const pin = prompt("Ingrese PIN de administrador para imprimir:");
@@ -585,6 +600,15 @@ function initIndex() {
       alert("Por favor, seleccione al menos un producto.");
       return;
     }
+
+    // --- LIMPIEZA DE TEXTOS PARA EL TICKET ---
+    let pagoCorto = pagoSel;
+    if (pagoSel.includes("Contado")) pagoCorto = "Efectivo/Transferencia";
+    if (pagoSel.includes("Tarjeta")) pagoCorto = "Tarjeta";
+
+    let entregaCorto = tipoEntrega;
+    if (tipoEntrega.includes("Envío")) entregaCorto = "Envío";
+    // -----------------------------------------
 
     const numPedido = obtenerNumeroPedido();
     const ahora = new Date();
@@ -606,9 +630,13 @@ function initIndex() {
       .filter(i => (i.tipo === "pizza_entera" || i.tipo === "pizza_media") && i.cantidad > 0)
       .forEach(i => {
         const nombreTicket = nombreParaTicket(i);
-        lineas.push(`${i.cantidad}x ${nombreTicket}`);
+        
+        if (i.cantidad > 1) {
+            lineas.push(`${i.cantidad}x ${nombreTicket}`);
+        } else {
+            lineas.push(`${nombreTicket}`);
+        }
 
-        // ✅ Promo con detalle
         if (i.detalle && i.detalle.numero) {
           lineas.push(`  PROMO N° ${i.detalle.numero}`);
           if (Array.isArray(i.detalle.incluye)) {
@@ -620,16 +648,23 @@ function initIndex() {
         }
       });
 
-    lineas.push("Bebidas:");
-    Object.values(carrito)
-      .filter(i => i.tipo === "bebida" && i.cantidad > 0)
-      .forEach(i => {
-        lineas.push(`${i.cantidad}x ${i.nombre}`);
-      });
+    const listaBebidas = Object.values(carrito).filter(i => i.tipo === "bebida" && i.cantidad > 0);
+    if (listaBebidas.length > 0) {
+        lineas.push("Bebidas:");
+        listaBebidas.forEach(i => {
+            if (i.cantidad > 1) {
+                lineas.push(`${i.cantidad}x ${i.nombre}`);
+            } else {
+                lineas.push(`${i.nombre}`);
+            }
+        });
+    }
 
     lineas.push("---------------------------");
-    lineas.push(`Pago: ${pagoSel}`);
-    lineas.push(`Entrega: ${tipoEntrega}`);
+    // Usamos las variables "Cortas" aquí
+    lineas.push(`Pago: ${pagoCorto}`);
+    lineas.push(`Entrega: ${entregaCorto}`);
+    
     if (envio > 0) lineas.push(`Envío: $${envio.toFixed(2)}`);
     lineas.push(`TOTAL: $${total.toFixed(2)}`);
 
@@ -650,10 +685,6 @@ function initIndex() {
     window.print();
     setTimeout(() => { ticketDiv.style.display = "none"; }, 400);
   });
-
-  // Inicio
-  renderIndexMenu();
-}
 
 // ================== GESTIÓN ==================
 
