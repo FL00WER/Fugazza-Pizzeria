@@ -538,3 +538,13 @@ body[data-page="gestion"] {
     background: #fdf4e3;
 }
 
+
+/* Estilo para el botón de media porción */
+.btn-mitad {
+    background-color: #e0a662; /* Un color diferente al rojo principal */
+    color: #fff;
+    margin-left: 5px;
+}
+.btn-mitad:hover {
+    background-color: #d4954e;
+}

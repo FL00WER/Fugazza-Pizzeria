@@ -1,6 +1,6 @@
 // script.js  (usar con <script type="module">)
 
-// Importar Firebase (desde firebase-init.js)
+// Importar Firebase (asegúrate de que firebase-init.js esté en la misma carpeta)
 import { db } from "./firebase-init.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
@@ -13,9 +13,6 @@ const PHONE_KEY   = "fugazza_whatsapp_phone_cache";
 const DEFAULT_PHONE = "5493834284204";
 const PIN_GESTION   = "4321";
 
-// PROMOS: cantidad de items a elegir (pizzas o calzones)
-const PROMO_ITEMS_A_ELEGIR = 2;
-
 let menuPizzas  = [];
 let menuBebidas = [];
 let telefono    = DEFAULT_PHONE;
@@ -25,23 +22,19 @@ let telefono    = DEFAULT_PHONE;
 function normalizarPizzas(listaCruda) {
   return (listaCruda || []).map(p => {
     const categoria = (p.categoria || "pizza").toString().toLowerCase();
+    
+    // Convertir precios
+    let pEntera = Number(p.precioEntera);
+    let pMedia = Number(p.precioMedia);
 
-    if (p.precioEntera != null && p.precioMedia != null) {
-      return {
-        nombre: p.nombre || "",
-        precioEntera: Number(p.precioEntera) || 0,
-        precioMedia:  Number(p.precioMedia) || 0,
-        descripcion: p.descripcion || "",
-        imagen: p.imagen || "",
-        categoria: (categoria === "promo" || categoria === "calzone") ? categoria : "pizza"
-      };
-    }
+    // Si viene del formato viejo o incompleto
+    if (isNaN(pEntera)) pEntera = Number(p.precio) || 0;
+    if (isNaN(pMedia)) pMedia = pEntera; // Si no tiene media, asume precio entera
 
-    const base = Number(p.precio) || 0;
     return {
       nombre: p.nombre || "",
-      precioEntera: base,
-      precioMedia:  base,
+      precioEntera: pEntera,
+      precioMedia:  pMedia,
       descripcion: p.descripcion || "",
       imagen: p.imagen || "",
       categoria: (categoria === "promo" || categoria === "calzone") ? categoria : "pizza"
@@ -53,10 +46,10 @@ function imagenValida(v) {
   return v && String(v).trim().length > 0;
 }
 
-// Formato ticket: entera solo nombre, media nombre + " 1/2"
+// Formato nombre para ticket
 function nombreParaTicket(item) {
-  if (item.tipo === "pizza_media") return `${item.nombre} 1/2`;
-  return `${item.nombre}`;
+  // Si tiene etiqueta específica (ej: " (1/2)") ya viene en el nombre o se agrega aqui
+  return item.nombre; 
 }
 
 // ================== FIRESTORE + CACHE ==================
@@ -94,19 +87,12 @@ async function cargarDatos() {
     console.warn("Error leyendo cache local:", e);
   }
 
-  // Defaults mínimos
+  // Defaults mínimos si está vacío
   if (!menuPizzas.length) {
     menuPizzas = normalizarPizzas([
-      { nombre: "Napolitana", precio: 5000, descripcion: "Tomate fresco, ajo, muzza y orégano.", imagen: "", categoria: "pizza" },
-      { nombre: "Fugazza",    precio: 5200, descripcion: "Doble queso, cebolla, bien cargada.", imagen: "", categoria: "pizza" },
-      { nombre: "Margarita",  precio: 15000, descripcion: "Muzza, albahaca y tomate.", imagen: "", categoria: "pizza" }
+      { nombre: "Napolitana", precioEntera: 5000, precioMedia: 3000, descripcion: "Tomate fresco, ajo.", categoria: "pizza" },
+      { nombre: "Promo 1",    precioEntera: 12000, precioMedia: 12000, descripcion: "2 Muzzarellas", categoria: "promo" }
     ]);
-  }
-  if (!menuBebidas.length) {
-    menuBebidas = [
-      { nombre: "Gaseosa 1.5L", precio: 2000 },
-      { nombre: "Agua mineral 1.5L", precio: 1500 }
-    ];
   }
   if (!telefono) telefono = DEFAULT_PHONE;
 }
@@ -161,29 +147,56 @@ function initIndex() {
 
   // -------- Cards --------
 
-  function crearCardPizza(p) {
+  function crearCardGenerica(p) {
     const card = document.createElement("article");
+    const cat = (p.categoria || "pizza").toLowerCase();
+    
     card.className = "pizza-card";
-    card.dataset.nombre       = p.nombre;
+    card.dataset.nombre = p.nombre;
+    card.dataset.cat = cat;
+    
+    // Guardamos precios en el dataset
     card.dataset.precioEntera = p.precioEntera;
     card.dataset.precioMedia  = p.precioMedia;
 
     const imgHTML = imagenValida(p.imagen)
       ? `<img src="${p.imagen}" alt="${p.nombre}">`
-      : `<img src="https://via.placeholder.com/400x250?text=Pizza" alt="${p.nombre}">`;
+      : `<img src="https://via.placeholder.com/400x250?text=${p.nombre}" alt="${p.nombre}">`;
+
+    let botonesHTML = "";
+    
+    // LÓGICA DE BOTONES SEGÚN CATEGORÍA
+    if (cat === "pizza") {
+        // Pizza: Botones Entera y 1/2 explícitos
+        botonesHTML = `
+         <div class="pizza-card__acciones">
+           <button class="pizza-card__btn btn-accion" data-tipo="entera">Entera</button>
+           <button class="pizza-card__btn btn-accion" data-tipo="media">1/2</button>
+         </div>`;
+    } else {
+        // Promos, Calzones, etc: Un solo botón "Agregar"
+        // La lógica de preguntar "1/2" se hará en el Click
+        botonesHTML = `
+         <div class="pizza-card__acciones">
+           <button class="pizza-card__btn btn-accion" data-tipo="unico">Agregar</button>
+         </div>`;
+    }
+
+    // Mostrar precios
+    let precioHTML = "";
+    if (cat === "promo") {
+        precioHTML = `$ ${p.precioEntera}`;
+    } else {
+        // Pizza o Calzone
+        precioHTML = `Entera: $ ${p.precioEntera}<br>1/2: $ ${p.precioMedia}`;
+    }
 
     card.innerHTML = `
       <div class="pizza-card__img">${imgHTML}</div>
       <div class="pizza-card__body">
         <div class="pizza-card__nombre">${p.nombre}</div>
-        <div class="pizza-card__precio">
-          Entera: $ ${p.precioEntera}<br>
-          1/2: $ ${p.precioMedia}
-        </div>
-        <div class="pizza-card__acciones">
-          <button class="pizza-card__btn btn-card-add-pizza-entera">Entera</button>
-          <button class="pizza-card__btn btn-card-add-pizza-media">1/2</button>
-        </div>
+        <div class="pizza-card__precio">${precioHTML}</div>
+        ${botonesHTML}
         <div class="pizza-card__descripcion">${p.descripcion || ""}</div>
       </div>
     `;
@@ -214,17 +227,15 @@ function initIndex() {
 
     menuPizzas.forEach(p => {
       const cat = (p.categoria || "pizza").toLowerCase();
-      const card = crearCardPizza(p);
+      const card = crearCardGenerica(p);
 
       if (cat === "promo" && cardsPromos) {
         cardsPromos.appendChild(card);
-        return;
-      }
-      if (cat === "calzone" && cardsCalzones) {
+      } else if (cat === "calzone" && cardsCalzones) {
         cardsCalzones.appendChild(card);
-        return;
+      } else if (cardsPizzas) {
+        cardsPizzas.appendChild(card);
       }
-      if (cardsPizzas) cardsPizzas.appendChild(card);
     });
 
     menuBebidas.forEach(b => {
@@ -234,98 +245,14 @@ function initIndex() {
     actualizarResumen();
   }
 
-  // -------- PROMOS (genéricas) --------
-
-  function pedirNumeroPromo() {
-    const n = prompt("Ingrese el número de la promo (Ej: 1, 2, 3):");
-    if (!n) return null;
-    const num = parseInt(n.trim(), 10);
-    if (isNaN(num) || num <= 0) {
-      alert("Número inválido.");
-      return null;
-    }
-    return num;
-  }
-
-  function seleccionar2ItemsPromo() {
-    const opciones = menuPizzas
-      .filter(p => {
-        const c = (p.categoria || "pizza").toLowerCase();
-        return c === "pizza" || c === "calzone";
-      })
-      .map(p => ({ nombre: p.nombre, categoria: (p.categoria || "pizza").toLowerCase() }));
-
-    if (!opciones.length) {
-      alert("No hay pizzas o calzones para elegir.");
-      return null;
-    }
-
-    const listado = opciones
-      .map((o, i) => `${i + 1}) ${o.nombre}${o.categoria === "calzone" ? " (Calzone)" : ""}`)
-      .join("\n");
-
-    const entrada = prompt(
-      `Seleccione ${PROMO_ITEMS_A_ELEGIR} items (pizzas/calzones) por número, separado por coma.\n\n${listado}\n\nEj: 1,3`
-    );
-
-    if (!entrada) return null;
-
-    const indices = entrada
-      .split(",")
-      .map(x => parseInt(x.trim(), 10))
-      .filter(n => !isNaN(n))
-      .map(n => n - 1)
-      .filter(i => i >= 0 && i < opciones.length);
-
-    const seleccion = [];
-    for (const i of indices) {
-      if (seleccion.length >= PROMO_ITEMS_A_ELEGIR) break;
-      seleccion.push(opciones[i].nombre);
-    }
-
-    if (seleccion.length !== PROMO_ITEMS_A_ELEGIR) {
-      alert(`Debe elegir exactamente ${PROMO_ITEMS_A_ELEGIR} opciones.`);
-      return null;
-    }
-
-    return seleccion;
-  }
-
-  function preguntarSiLlevaBebida() {
-    return confirm("¿La promo lleva bebida?");
-  }
-
-  function elegirBebida() {
-    if (!menuBebidas.length) {
-      alert("No hay bebidas cargadas para elegir.");
-      return null;
-    }
-
-    const listado = menuBebidas.map((b, i) => `${i + 1}) ${b.nombre} - $${b.precio}`).join("\n");
-    const entrada = prompt(`Seleccione la bebida por número:\n\n${listado}\n\nEj: 1`);
-
-    if (!entrada) return null;
-
-    const idx = parseInt(entrada.trim(), 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= menuBebidas.length) {
-      alert("Selección inválida.");
-      return null;
-    }
-
-    return menuBebidas[idx];
-  }
-
   // -------- Carrito --------
 
-  function agregarAlCarrito(tipo, nombre, precio, etiqueta = "", detalle = null, claveExtra = "") {
-    const clave = `${tipo}::${nombre}${claveExtra ? `::${claveExtra}` : ""}`;
+  function agregarAlCarrito(tipo, nombre, precio) {
+    const clave = `${tipo}::${nombre}`;
 
     if (!carrito[clave]) {
-      carrito[clave] = { tipo, nombre, precio, etiqueta, cantidad: 0, detalle: null };
+      carrito[clave] = { tipo, nombre, precio, cantidad: 0 };
     }
-
-    if (detalle) carrito[clave].detalle = detalle;
-
     carrito[clave].cantidad++;
     actualizarResumen();
   }
@@ -340,17 +267,8 @@ function initIndex() {
       const tr = document.createElement("tr");
       tr.dataset.clave = clave;
 
-      let nombreMostrar = item.nombre;
-
-      if (item.tipo === "pizza_media") nombreMostrar += " (1/2)";
-
-      // Mostrar detalle de promo en el resumen (si existe)
-      if (item.detalle && item.detalle.numero) {
-        nombreMostrar += ` [PROMO ${item.detalle.numero}: ${item.detalle.incluye?.join(" + ") || ""}]`;
-      }
-
       tr.innerHTML = `
-        <td>${nombreMostrar}</td>
+        <td>${item.nombre}</td>
         <td>$ ${item.precio}</td>
         <td><input type="number" class="cantidad" min="0" step="1" value="${item.cantidad}"></td>
       `;
@@ -373,29 +291,49 @@ function initIndex() {
       }
     });
 
-    const pagoSel = document.querySelector('input[name="pago"]:checked').value;
+    // Obtener forma de pago del HTML (asegurar que existan los inputs con estos valores)
+    // Values esperados: "efectivo", "debito", "credito"
+    const inputPago = document.querySelector('input[name="pago"]:checked');
+    const pagoSel = inputPago ? inputPago.value : "efectivo";
 
     const entregaSel = document.querySelector('input[name="entrega"]:checked')?.value || "Retira en local";
     let costoEnvio = 0;
-    if (entregaSel === "Envío / Delivery") {
+    if (entregaSel === "Delivery") {
       costoEnvio = parseFloat(inputEnvio.value) || 0;
     }
 
+    // --- CÁLCULO DE RECARGOS ---
     let recargo = 0;
-    if (pagoSel === "Tarjeta (débito/crédito)") {
-      recargo = subtotal * 0.10;
+    let porcentaje = 0;
+
+    // Base imponible: Generalmente recargo es sobre la comida + envío, o solo comida.
+    // Lo aplicamos a Subtotal + Envío para simplificar el total a cobrar.
+    const baseCalculo = subtotal + costoEnvio;
+
+    if (pagoSel === "debito") {
+        porcentaje = 5;
+        recargo = baseCalculo * 0.05;
+    } else if (pagoSel === "credito") {
+        porcentaje = 10;
+        recargo = baseCalculo * 0.10;
     }
 
-    const total = subtotal + recargo + costoEnvio;
+    const total = baseCalculo + recargo;
 
-    let texto = `Total: $ ${total.toFixed(2)} — Subtotal: $ ${subtotal.toFixed(2)}`;
-    if (recargo > 0) texto += ` | Recargo 10%: $ ${recargo.toFixed(2)}`;
-    if (costoEnvio > 0) texto += ` | Envío: $ ${costoEnvio.toFixed(2)}`;
+    // Actualizar Texto Visual
+    let texto = `Total: $ ${Math.round(total).toLocaleString('es-AR')}`;
+    
+    // Detalles pequeños al lado
+    let detalles = [];
+    if (recargo > 0) detalles.push(`Recargo ${porcentaje}%`);
+    if (costoEnvio > 0) detalles.push(`Envío $${costoEnvio}`);
+    
+    if(detalles.length > 0) texto += ` (${detalles.join(", ")})`;
 
     textoTotal.textContent = texto;
     miniCarrito.textContent = cantidadItems === 1 ? "1 ítem" : `${cantidadItems} ítems`;
 
-    return { subtotal, recargo, envio: costoEnvio, total, pagoSel, cantidadItems, tipoEntrega: entregaSel };
+    return { subtotal, recargo, envio: costoEnvio, total, pagoSel, cantidadItems, tipoEntrega: entregaSel, porcentaje };
   }
 
   function actualizarCantidadDesdeTabla(e) {
@@ -407,9 +345,7 @@ function initIndex() {
     const cant = parseInt(e.target.value) || 0;
 
     if (!carrito[clave]) return;
-
     carrito[clave].cantidad = cant;
-
     if (cant <= 0) delete carrito[clave];
 
     actualizarResumen();
@@ -421,8 +357,9 @@ function initIndex() {
   btnsPago.forEach(r => r.addEventListener("change", calcularTotal));
   btnsEntrega.forEach(r => {
     r.addEventListener("change", () => {
-      if (r.value === "Envío / Delivery" && r.checked) {
+      if (r.value === "Delivery" && r.checked) {
         inputEnvio.disabled = false;
+        if(inputEnvio.value == 0) inputEnvio.value = 1000;
       } else if (r.value === "Retira en local" && r.checked) {
         inputEnvio.disabled = true;
         inputEnvio.value = "";
@@ -432,68 +369,50 @@ function initIndex() {
   });
   inputEnvio.addEventListener("input", calcularTotal);
 
-  // Click en cards (pizzas/promos/calzones)
-  function bindClickPizzas(container) {
-    if (!container) return;
-
-    container.addEventListener("click", e => {
+  // -------- CLICK HANDLER UNIFICADO (PIZZAS / PROMOS / CALZONES) --------
+  
+  function handleCardClick(e) {
+      if (!e.target.classList.contains("btn-accion")) return;
+      
       const card = e.target.closest(".pizza-card");
-      if (!card) return;
-
       const nombre = card.dataset.nombre;
+      const cat = card.dataset.cat;
+      const precioEntera = parseFloat(card.dataset.precioEntera);
+      const precioMedia  = parseFloat(card.dataset.precioMedia);
+      const accion = e.target.dataset.tipo; // "entera", "media", "unico"
 
-      const esEntera = e.target.classList.contains("btn-card-add-pizza-entera");
-      const esMedia  = e.target.classList.contains("btn-card-add-pizza-media");
-
-      if (!esEntera && !esMedia) return;
-
-      const tipo = esMedia ? "pizza_media" : "pizza_entera";
-      const precio = esMedia
-        ? parseFloat(card.dataset.precioMedia)
-        : parseFloat(card.dataset.precioEntera);
-
-      // Detectar categoría desde el menú (por nombre)
-      const prod = menuPizzas.find(x => x.nombre === nombre);
-      const categoria = (prod?.categoria || "pizza").toLowerCase();
-
-      // ✅ PROMO genérica
-      if (categoria === "promo") {
-        const numeroPromo = pedirNumeroPromo();
-        if (!numeroPromo) return;
-
-        const seleccion = seleccionar2ItemsPromo();
-        if (!seleccion) return;
-
-        let bebidaElegida = null;
-        if (preguntarSiLlevaBebida()) {
-          bebidaElegida = elegirBebida();
-          if (!bebidaElegida) return;
-        }
-
-        const detallePromo = {
-          numero: numeroPromo,
-          incluye: seleccion,
-          bebida: bebidaElegida ? bebidaElegida.nombre : null
-        };
-
-        const claveExtra = `promo${numeroPromo}|${seleccion.join("|")}|${detallePromo.bebida || "sinbebida"}`;
-
-        agregarAlCarrito(tipo, nombre, precio, "", detallePromo, claveExtra);
-
-        if (bebidaElegida) {
-          agregarAlCarrito("bebida", bebidaElegida.nombre, parseFloat(bebidaElegida.precio));
-        }
-        return;
+      // 1. ES PIZZA (tiene botones explicitos)
+      if (cat === "pizza") {
+          if (accion === "entera") {
+              agregarAlCarrito("pizza_entera", nombre, precioEntera);
+          } else {
+              agregarAlCarrito("pizza_media", nombre + " (1/2)", precioMedia);
+          }
+          return;
       }
 
-      // Caso normal
-      agregarAlCarrito(tipo, nombre, precio);
-    });
+      // 2. ES PROMO (botón unico, se agrega entera directamenet)
+      if (cat === "promo") {
+          agregarAlCarrito("promo", nombre, precioEntera);
+          return;
+      }
+
+      // 3. ES CALZONE u OTROS (botón unico, PREGUNTAR si es media)
+      if (cat === "calzone" || accion === "unico") {
+          // Preguntar al usuario
+          const quiereMedia = confirm(`¿Desea cargar media porción (1/2) de ${nombre}? \n\nAceptar = MEDIA ($${precioMedia})\nCancelar = ENTERA ($${precioEntera})`);
+          
+          if (quiereMedia) {
+              agregarAlCarrito("calzone_media", nombre + " (1/2)", precioMedia);
+          } else {
+              agregarAlCarrito("calzone_entera", nombre, precioEntera);
+          }
+      }
   }
 
-  bindClickPizzas(cardsPizzas);
-  bindClickPizzas(cardsPromos);
-  bindClickPizzas(cardsCalzones);
+  if (cardsPizzas) cardsPizzas.addEventListener("click", handleCardClick);
+  if (cardsPromos) cardsPromos.addEventListener("click", handleCardClick);
+  if (cardsCalzones) cardsCalzones.addEventListener("click", handleCardClick);
 
   // Bebidas
   if (cardsBebidas) {
@@ -506,7 +425,7 @@ function initIndex() {
     });
   }
 
-  // Nº de pedido por día
+  // Nº de pedido
   function obtenerNumeroPedido() {
     const hoy = new Date().toISOString().slice(0, 10);
     const guardado = JSON.parse(localStorage.getItem("pedidos_fugazza") || "null");
@@ -518,93 +437,52 @@ function initIndex() {
 
   // WhatsApp
   btnWhatsApp.addEventListener("click", () => {
-    const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega } = calcularTotal();
+    const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega, porcentaje } = calcularTotal();
     if (cantidadItems === 0) {
-      alert("Por favor, seleccione al menos un producto.");
+      alert("Carrito vacío.");
       return;
     }
 
-    // --- LIMPIEZA DE TEXTOS PARA EL MENSAJE ---
-    let pagoCorto = pagoSel;
-    if (pagoSel.includes("Contado")) pagoCorto = "Efectivo/Transferencia";
-    if (pagoSel.includes("Tarjeta")) pagoCorto = "Tarjeta";
-
-    let entregaCorto = tipoEntrega;
-    if (tipoEntrega.includes("Envío")) entregaCorto = "Envío";
-    // -------------------------------------------
+    // Texto forma pago
+    let txtPago = "Efec / Trans";
+    if (pagoSel === "debito") txtPago = `Débito (+${porcentaje}%)`;
+    if (pagoSel === "credito") txtPago = `Crédito (+${porcentaje}%)`;
 
     const numPedido = obtenerNumeroPedido();
-    let msg = `🍕 Pizzería Fugazza - Pedido N° ${numPedido}\n\n`;
+    let msg = `🍕 *Pizzería Fugazza* - Pedido N° ${numPedido}\n\n`;
 
     const nombreCliente = document.getElementById("nombre-cliente").value.trim();
     const comentarios = document.getElementById("comentarios").value.trim();
-    if (nombreCliente) msg += `👤 Cliente: ${nombreCliente}\n\n`;
+    if (nombreCliente) msg += `👤 *Cliente:* ${nombreCliente}\n\n`;
 
-    msg += "Pedido:\n";
-    Object.values(carrito)
-      .filter(i => (i.tipo === "pizza_entera" || i.tipo === "pizza_media") && i.cantidad > 0)
-      .forEach(i => {
-        const nombreTicket = nombreParaTicket(i);
-        const cantStr = i.cantidad > 1 ? ` x${i.cantidad}` : "";
-        
-        msg += `- ${nombreTicket}${cantStr}\n`;
+    msg += "*Detalle:*\n";
+    Object.values(carrito).forEach(i => {
+       msg += `- ${i.cantidad}x ${i.nombre} ($${i.precio * i.cantidad})\n`;
+    });
 
-        if (i.detalle && i.detalle.numero) {
-          msg += `  PROMO N° ${i.detalle.numero}\n`;
-          if (Array.isArray(i.detalle.incluye)) {
-            msg += `  Incluye: ${i.detalle.incluye.join(", ")}\n`;
-          }
-          if (i.detalle.bebida) {
-            msg += `  Bebida: ${i.detalle.bebida}\n`;
-          }
-        }
-      });
-
-    const listaBebidas = Object.values(carrito).filter(i => i.tipo === "bebida" && i.cantidad > 0);
-    if (listaBebidas.length > 0) {
-        msg += "\nBebidas:\n";
-        listaBebidas.forEach(i => {
-            const cantStr = i.cantidad > 1 ? ` x${i.cantidad}` : "";
-            msg += `- ${i.nombre}${cantStr}\n`;
-        });
-    }
-
-    msg += `\nForma de pago: ${pagoCorto}\n`;
-    msg += `Tipo de entrega: ${entregaCorto}\n`;
+    msg += `\nSubtotal: $${Math.round(subtotal)}\n`;
+    if (envio > 0) msg += `Envío: $${Math.round(envio)}\n`;
+    if (recargo > 0) msg += `Recargo (${porcentaje}%): $${Math.round(recargo)}\n`;
     
-    msg += `Subtotal: $ ${subtotal.toFixed(2)}\n`;
-    if (recargo > 0) msg += `Recargo (10%): $ ${recargo.toFixed(2)}\n`;
-    if (envio > 0) msg += `Envío: $ ${envio.toFixed(2)}\n`;
-    msg += `TOTAL: $ ${total.toFixed(2)}\n`;
-
-    if (comentarios) msg += `\nComentarios: ${comentarios}\n`;
+    msg += `*TOTAL: $${Math.round(total)}*\n`;
+    msg += `\n💳 Pago: ${txtPago}`;
+    msg += `\n🛵 Entrega: ${tipoEntrega}`;
+    
+    if (comentarios) msg += `\n📝 Nota: ${comentarios}`;
 
     const url = `https://wa.me/${telefono}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   });
 
-  // Imprimir ticket (con PIN)
+  // Imprimir ticket
   btnImprimir.addEventListener("click", () => {
-    const pin = prompt("Ingrese PIN de administrador para imprimir:");
-    if (pin !== PIN_GESTION) {
-      alert("PIN incorrecto. No tiene permiso para imprimir el ticket.");
-      return;
-    }
+    const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega, porcentaje } = calcularTotal();
+    if (cantidadItems === 0) return alert("Carrito vacío");
 
-    const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega } = calcularTotal();
-    if (cantidadItems === 0) {
-      alert("Por favor, seleccione al menos un producto.");
-      return;
-    }
-
-    // --- LIMPIEZA DE TEXTOS PARA EL TICKET ---
-    let pagoCorto = pagoSel;
-    if (pagoSel.includes("Contado")) pagoCorto = "Efectivo/Transferencia";
-    if (pagoSel.includes("Tarjeta")) pagoCorto = "Tarjeta";
-
-    let entregaCorto = tipoEntrega;
-    if (tipoEntrega.includes("Envío")) entregaCorto = "Envío";
-    // -----------------------------------------
+    // Texto pago para ticket
+    let txtPago = "Efec / Trans";
+    if (pagoSel === "debito") txtPago = "Débito";
+    if (pagoSel === "credito") txtPago = "Crédito";
 
     const numPedido = obtenerNumeroPedido();
     const ahora = new Date();
@@ -620,55 +498,32 @@ function initIndex() {
     lineas.push(`Fecha: ${fecha} ${hora}`);
     if (nombreCliente) lineas.push(`Cliente: ${nombreCliente}`);
     lineas.push("---------------------------");
-    lineas.push("Pedido:");
+    lineas.push("PEDIDO:"); // Cambiado a mayúsculas para resaltar
 
-    Object.values(carrito)
-      .filter(i => (i.tipo === "pizza_entera" || i.tipo === "pizza_media") && i.cantidad > 0)
-      .forEach(i => {
-        const nombreTicket = nombreParaTicket(i);
-        
-        if (i.cantidad > 1) {
-            lineas.push(`${i.cantidad}x ${nombreTicket}`);
-        } else {
-            lineas.push(`${nombreTicket}`);
-        }
-
-        if (i.detalle && i.detalle.numero) {
-          lineas.push(`  PROMO N° ${i.detalle.numero}`);
-          if (Array.isArray(i.detalle.incluye)) {
-            i.detalle.incluye.forEach(x => lineas.push(`  - ${x}`));
-          }
-          if (i.detalle.bebida) {
-            lineas.push(`  Bebida: ${i.detalle.bebida}`);
-          }
-        }
-      });
-
-    const listaBebidas = Object.values(carrito).filter(i => i.tipo === "bebida" && i.cantidad > 0);
-    if (listaBebidas.length > 0) {
-        lineas.push("Bebidas:");
-        listaBebidas.forEach(i => {
-            if (i.cantidad > 1) {
-                lineas.push(`${i.cantidad}x ${i.nombre}`);
-            } else {
-                lineas.push(`${i.nombre}`);
-            }
-        });
-    }
+    Object.values(carrito).forEach(i => {
+       
+       // LÓGICA NUEVA:
+       if (i.cantidad === 1) {
+           // Si es 1, solo guion y nombre
+           lineas.push(`- ${i.nombre}`);
+       } else {
+           // Si son más de 1, guion, nombre y al final "xCantidad"
+           lineas.push(`- ${i.nombre} x${i.cantidad}`);
+       }
+    });
 
     lineas.push("---------------------------");
-    lineas.push(`Pago: ${pagoCorto}`);
-    lineas.push(`Entrega: ${entregaCorto}`);
+    if(envio > 0) lineas.push(`Envío: $${Math.round(envio)}`);
+    if(recargo > 0) lineas.push(`Recargo ${porcentaje}%: $${Math.round(recargo)}`);
     
-    if (envio > 0) lineas.push(`Envío: $${envio.toFixed(2)}`);
-    lineas.push(`TOTAL: $${total.toFixed(2)}`);
-
+    lineas.push(`TOTAL: $${Math.round(total)}`);
+    lineas.push(`Pago: ${txtPago}`);
+    lineas.push(`Modo: ${tipoEntrega}`);
+    
     if (comentarios) {
       lineas.push("---------------------------");
-      lineas.push("Comentarios:");
-      lineas.push(comentarios);
+      lineas.push(`Nota: ${comentarios}`);
     }
-
     lineas.push("---------------------------");
     lineas.push("   ¡GRACIAS POR SU COMPRA!");
 
@@ -678,14 +533,14 @@ function initIndex() {
 
     ticketDiv.style.display = "block";
     window.print();
-    setTimeout(() => { ticketDiv.style.display = "none"; }, 400);
+    setTimeout(() => { ticketDiv.style.display = "none"; }, 500);
   });
 
-  // Inicio
   renderIndexMenu();
 }
 
-// ================== GESTIÓN ==================
+// ================== GESTIÓN (ADMIN) ==================
+// Se mantiene igual, solo nos aseguramos que guarde bien las categorías
 
 function initGestion() {
   const seccionLogin = document.getElementById("panel-admin-login");
@@ -756,8 +611,7 @@ function initGestion() {
         <td>${p.nombre}</td>
         <td>$ ${p.precioEntera}</td>
         <td>$ ${p.precioMedia}</td>
-        <td>${p.descripcion || ""}</td>
-        <td>${imagenValida(p.imagen) ? "Sí" : "No"}</td>
+        <td>${p.categoria || "pizza"}</td>
         <td>
           <button class="btn-editar">Editar</button>
           <button class="btn-eliminar">Eliminar</button>
@@ -791,20 +645,18 @@ function initGestion() {
     const archivo = inImgPizza.files[0];
 
     const categoria = inCatPizza ? (inCatPizza.value || "pizza").toLowerCase() : "pizza";
-    const categoriaOk = (categoria === "promo" || categoria === "calzone") ? categoria : "pizza";
-
+    
     if (!nombre) return alert("Ingrese el nombre.");
-    if (isNaN(precioEntera) || precioEntera <= 0) return alert("Ingrese el precio de la pizza entera.");
-    if (isNaN(precioMedia)  || precioMedia  <= 0) return alert("Ingrese el precio de la media pizza.");
+    if (isNaN(precioEntera)) return alert("Precio entera inválido.");
 
     const pushPizza = async (imgBase64) => {
       menuPizzas.push({
         nombre,
         precioEntera,
-        precioMedia,
+        precioMedia: isNaN(precioMedia) ? precioEntera : precioMedia,
         descripcion: desc,
         imagen: imgBase64 || "",
-        categoria: categoriaOk
+        categoria
       });
       await guardarConfigRemota();
       renderAdmin();
@@ -812,7 +664,6 @@ function initGestion() {
     };
 
     if (!archivo) return await pushPizza("");
-
     const lector = new FileReader();
     lector.onload = async () => await pushPizza(lector.result);
     lector.readAsDataURL(archivo);
@@ -820,14 +671,13 @@ function initGestion() {
 
   btnQuitarImg.addEventListener("click", () => {
     eliminarImagenEnEdicion = true;
-    lblImgEstado.textContent = "Imagen eliminada. Si no carga otra, quedará sin foto.";
+    lblImgEstado.textContent = "Imagen eliminada.";
   });
 
   btnCancelarPizza.addEventListener("click", () => resetFormPizza());
 
   btnGuardarPizza.addEventListener("click", async () => {
     if (indiceEditandoPizza === null) return;
-
     const pizza = menuPizzas[indiceEditandoPizza];
 
     const nombre = inNomPizza.value.trim();
@@ -835,23 +685,16 @@ function initGestion() {
     const precioMedia  = parseFloat(inPrePizzaMedia.value);
     const desc = inDescPizza.value.trim();
     const archivo = inImgPizza.files[0];
-
-    const categoria = inCatPizza
-      ? (inCatPizza.value || "pizza").toLowerCase()
-      : (pizza.categoria || "pizza");
-
-    const categoriaOk = (categoria === "promo" || categoria === "calzone") ? categoria : "pizza";
+    const categoria = inCatPizza ? inCatPizza.value : "pizza";
 
     if (!nombre) return alert("Ingrese el nombre.");
-    if (isNaN(precioEntera) || precioEntera <= 0) return alert("Ingrese el precio de la pizza entera.");
-    if (isNaN(precioMedia)  || precioMedia  <= 0) return alert("Ingrese el precio de la media pizza.");
 
     function aplicar(imagenNueva) {
       pizza.nombre = nombre;
       pizza.precioEntera = precioEntera;
-      pizza.precioMedia  = precioMedia;
+      pizza.precioMedia  = isNaN(precioMedia) ? precioEntera : precioMedia;
       pizza.descripcion  = desc;
-      pizza.categoria    = categoriaOk;
+      pizza.categoria    = categoria;
 
       if (eliminarImagenEnEdicion) pizza.imagen = "";
       else if (imagenNueva !== null) pizza.imagen = imagenNueva;
@@ -880,10 +723,7 @@ function initGestion() {
     const index = parseInt(tr.dataset.index, 10);
 
     if (e.target.classList.contains("btn-eliminar")) {
-      const pin = prompt("PIN admin para eliminar:");
-      if (pin !== PIN_GESTION) return alert("PIN incorrecto.");
-      if (!confirm("¿Eliminar esta pizza?")) return;
-
+      if (!confirm("¿Eliminar este ítem?")) return;
       menuPizzas.splice(index, 1);
       await guardarConfigRemota();
       renderAdmin();
@@ -902,10 +742,10 @@ function initGestion() {
       if (inCatPizza) inCatPizza.value = (p.categoria || "pizza");
 
       if (imagenValida(p.imagen)) {
-        lblImgEstado.textContent = "Tiene imagen cargada.";
+        lblImgEstado.textContent = "Tiene imagen.";
         btnQuitarImg.style.display = "inline-block";
       } else {
-        lblImgEstado.textContent = "Sin imagen cargada.";
+        lblImgEstado.textContent = "Sin imagen.";
         btnQuitarImg.style.display = "none";
       }
 
@@ -915,12 +755,11 @@ function initGestion() {
     }
   });
 
+  // Bebidas Admin
   btnAgregarBebida.addEventListener("click", async () => {
     const nombre = inNomBebida.value.trim();
     const precio = parseFloat(inPreBebida.value);
-    if (!nombre) return alert("Ingrese el nombre.");
-    if (isNaN(precio) || precio <= 0) return alert("Ingrese un precio válido.");
-
+    if (!nombre || isNaN(precio)) return alert("Datos inválidos.");
     menuBebidas.push({ nombre, precio });
     await guardarConfigRemota();
     renderAdmin();
@@ -932,38 +771,28 @@ function initGestion() {
     const tr = e.target.closest("tr");
     if (!tr) return;
     const index = parseInt(tr.dataset.index, 10);
-    const bebida = menuBebidas[index];
 
     if (e.target.classList.contains("btn-eliminar")) {
-      const pin = prompt("PIN admin para eliminar:");
-      if (pin !== PIN_GESTION) return alert("PIN incorrecto.");
-      if (!confirm("¿Eliminar esta bebida?")) return;
-
-      menuBebidas.splice(index, 1);
-      await guardarConfigRemota();
-      renderAdmin();
+        if (!confirm("¿Eliminar bebida?")) return;
+        menuBebidas.splice(index, 1);
+        await guardarConfigRemota();
+        renderAdmin();
     }
-
     if (e.target.classList.contains("btn-editar")) {
-      const nuevoNombre = prompt("Nombre de la bebida:", bebida.nombre);
-      if (nuevoNombre === null) return;
-      const nuevoPrecioStr = prompt("Precio ($):", bebida.precio);
-      if (nuevoPrecioStr === null) return;
-      const nuevoPrecio = parseFloat(nuevoPrecioStr);
-      if (isNaN(nuevoPrecio) || nuevoPrecio <= 0) return alert("Precio inválido.");
-
-      bebida.nombre = nuevoNombre.trim() || bebida.nombre;
-      bebida.precio = nuevoPrecio;
-      await guardarConfigRemota();
-      renderAdmin();
+        const b = menuBebidas[index];
+        const n = prompt("Nombre:", b.nombre);
+        const p = prompt("Precio:", b.precio);
+        if(n && p) {
+            b.nombre = n;
+            b.precio = parseFloat(p);
+            await guardarConfigRemota();
+            renderAdmin();
+        }
     }
   });
 
   btnGuardarTel.addEventListener("click", async () => {
-    const val = inTelefono.value.trim();
-    if (!val) return alert("Ingrese un número válido.");
-
-    telefono = val;
+    telefono = inTelefono.value.trim();
     await guardarConfigRemota();
     alert("Teléfono actualizado.");
   });

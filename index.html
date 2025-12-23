@@ -156,38 +156,45 @@
 
             <div class="grupo">
                 <p class="label">Forma de pago:</p>
+                
                 <label class="opcion">
-                    <input type="radio" name="pago" value="Contado (efectivo/transferencia)" checked>
-                    Contado (efectivo / transferencia)
+                    <input type="radio" name="pago" value="efectivo" checked onchange="actualizarTotal()">
+                    Efec / Trans
                 </label>
+                
                 <label class="opcion">
-                    <input type="radio" name="pago" value="Tarjeta (débito/crédito)">
-                    Tarjeta (débito / crédito) <span class="texto-resaltado">(+10% recargo)</span>
+                    <input type="radio" name="pago" value="debito" onchange="actualizarTotal()">
+                    Débito <span class="texto-resaltado">(+5% recargo)</span>
+                </label>
+
+                <label class="opcion">
+                    <input type="radio" name="pago" value="credito" onchange="actualizarTotal()">
+                    Crédito <span class="texto-resaltado">(+10% recargo)</span>
                 </label>
             </div>
             
             <div class="grupo">
                 <p class="label">Tipo de entrega:</p>
                 <label class="opcion">
-                    <input type="radio" name="entrega" value="Retira en local" checked>
+                    <input type="radio" name="entrega" value="Retira en local" checked onchange="toggleEnvio()">
                     Retira en local
                 </label>
                 <label class="opcion">
-                    <input type="radio" name="entrega" value="Envío / Delivery">
-                    Envío / Delivery
+                    <input type="radio" name="entrega" value="Delivery" onchange="toggleEnvio()">
+                    Delivery
                 </label>
             </div>
 
             <div class="grupo">
                 <label for="costo-envio" class="label">Costo de envío ($):</label>
-                <input type="number" id="costo-envio" class="input" min="0" step="10"
-                    placeholder="Ej: 800" disabled>
+                <input type="number" id="costo-envio" class="input" min="0" step="10" value="0"
+                    placeholder="Ej: 800" disabled oninput="actualizarTotal()">
             </div>
 
             <div class="grupo">
                 <label for="comentarios" class="label">Comentarios (opcional):</label>
                 <textarea id="comentarios" class="textarea" rows="3"
-                          placeholder="Sin aceitunas, agregar servilletas, enviar a las 21 hs, etc."></textarea>
+                        placeholder="Sin aceitunas, agregar servilletas, enviar a las 21 hs, etc."></textarea>
             </div>
 
             <div class="botones-acciones">
@@ -200,7 +207,7 @@
             </div>
 
             <p class="ayuda">
-                El pedido se enviará al WhatsApp configurado en la pantalla de Gestión.
+                El pedido se enviará al WhatsApp configurado.
             </p>
         </section>
     </section>
