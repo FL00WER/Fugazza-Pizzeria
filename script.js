@@ -437,14 +437,7 @@ function initIndex() {
 
       // 3. ES CALZONE u OTROS (botón único, PREGUNTAR si es media)
       if (cat === "calzone" || accion === "unico") {
-          // Preguntar al usuario
-          const quiereMedia = confirm(`¿Desea cargar media porción (1/2) de ${nombre}? \n\nAceptar = MEDIA ($${precioMedia})\nCancelar = ENTERA ($${precioEntera})`);
-          
-          if (quiereMedia) {
-              agregarAlCarrito("calzone_media", nombre + " (1/2)", precioMedia);
-          } else {
-              agregarAlCarrito("calzone_entera", nombre, precioEntera);
-          }
+        agregarAlCarrito("calzone_entera", nombre, precioEntera);
       }
   }
 
