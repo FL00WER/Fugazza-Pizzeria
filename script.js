@@ -426,7 +426,7 @@ function initIndex() {
 
               // 4. Modificar el nombre para el ticket y carrito
               const pizzaElegida = opcionesPizzas[indice].nombre;
-              nombre = `${nombre} (Muzza + ${pizzaElegida})`; // Ej: Promo 2 (Muzza + Napolitana)
+              nombre = `${nombre} (+ ${pizzaElegida})`; // Ej: Promo 2 (+ Napolitana)
           }
           // -------------------------------------
 
