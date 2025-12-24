@@ -296,7 +296,7 @@ function initIndex() {
     const inputPago = document.querySelector('input[name="pago"]:checked');
     const pagoSel = inputPago ? inputPago.value : "efectivo";
 
-    const entregaSel = document.querySelector('input[name="entrega"]:checked')?.value || "Retira en local";
+    const entregaSel = document.querySelector('input[name="entrega"]:checked')?.value || "Retira";
     let costoEnvio = 0;
     if (entregaSel === "Delivery") {
       costoEnvio = parseFloat(inputEnvio.value) || 0;
@@ -360,7 +360,7 @@ function initIndex() {
       if (r.value === "Delivery" && r.checked) {
         inputEnvio.disabled = false;
         if(inputEnvio.value == 0) inputEnvio.value = 1000;
-      } else if (r.value === "Retira en local" && r.checked) {
+      } else if (r.value === "Retira" && r.checked) {
         inputEnvio.disabled = true;
         inputEnvio.value = "";
       }
@@ -369,19 +369,19 @@ function initIndex() {
   });
   inputEnvio.addEventListener("input", calcularTotal);
 
-  // -------- CLICK HANDLER UNIFICADO (PIZZAS / PROMOS / CALZONES) --------
+  // -------- CLICK HANDLER (Pizzas, Promos, Calzones) --------
   
   function handleCardClick(e) {
       if (!e.target.classList.contains("btn-accion")) return;
       
       const card = e.target.closest(".pizza-card");
-      const nombre = card.dataset.nombre;
+      let nombre = card.dataset.nombre; // Usamos let para poder modificarlo si es Promo 2
       const cat = card.dataset.cat;
       const precioEntera = parseFloat(card.dataset.precioEntera);
       const precioMedia  = parseFloat(card.dataset.precioMedia);
       const accion = e.target.dataset.tipo; // "entera", "media", "unico"
 
-      // 1. ES PIZZA (tiene botones explicitos)
+      // 1. ES PIZZA (tiene botones explícitos)
       if (cat === "pizza") {
           if (accion === "entera") {
               agregarAlCarrito("pizza_entera", nombre, precioEntera);
@@ -391,13 +391,51 @@ function initIndex() {
           return;
       }
 
-      // 2. ES PROMO (botón unico, se agrega entera directamenet)
+      // 2. ES PROMO
       if (cat === "promo") {
+          // --- LÓGICA ESPECIAL PARA PROMO 2 ---
+          // Verifica si el nombre contiene "Promo 2" (sin importar mayúsculas/minúsculas)
+          if (nombre.toLowerCase().includes("promo 2")) {
+              
+              // 1. Obtener lista de pizzas disponibles (excluyendo promos, bebidas, etc.)
+              const opcionesPizzas = menuPizzas.filter(p => 
+                  !p.categoria || p.categoria === "pizza"
+              );
+
+              if (opcionesPizzas.length === 0) {
+                  alert("No hay pizzas cargadas para elegir.");
+                  return;
+              }
+
+              // 2. Armar texto para el menú de selección
+              let mensaje = "La Promo 2 incluye: Muzza + 1 a elección.\n\nEscriba el número de la 2da pizza:\n";
+              opcionesPizzas.forEach((p, index) => {
+                  mensaje += `${index + 1}) ${p.nombre}\n`;
+              });
+
+              // 3. Pedir al usuario que elija
+              const entrada = prompt(mensaje);
+              
+              if (!entrada) return; // Si cancela, no hace nada
+
+              const indice = parseInt(entrada) - 1;
+              if (isNaN(indice) || indice < 0 || indice >= opcionesPizzas.length) {
+                  alert("Opción no válida. Intente de nuevo.");
+                  return;
+              }
+
+              // 4. Modificar el nombre para el ticket y carrito
+              const pizzaElegida = opcionesPizzas[indice].nombre;
+              nombre = `${nombre} (Muzza + ${pizzaElegida})`; // Ej: Promo 2 (Muzza + Napolitana)
+          }
+          // -------------------------------------
+
+          // Agrega la promo (sea la 2 modificada o cualquier otra normal)
           agregarAlCarrito("promo", nombre, precioEntera);
           return;
       }
 
-      // 3. ES CALZONE u OTROS (botón unico, PREGUNTAR si es media)
+      // 3. ES CALZONE u OTROS (botón único, PREGUNTAR si es media)
       if (cat === "calzone" || accion === "unico") {
           // Preguntar al usuario
           const quiereMedia = confirm(`¿Desea cargar media porción (1/2) de ${nombre}? \n\nAceptar = MEDIA ($${precioMedia})\nCancelar = ENTERA ($${precioEntera})`);
@@ -434,7 +472,7 @@ function initIndex() {
     localStorage.setItem("pedidos_fugazza", JSON.stringify({ fecha: hoy, numero: n }));
     return n;
   }
-
+"Retira en local"
   // WhatsApp
   btnWhatsApp.addEventListener("click", () => {
     const { subtotal, recargo, envio, total, pagoSel, cantidadItems, tipoEntrega, porcentaje } = calcularTotal();
@@ -444,7 +482,7 @@ function initIndex() {
     }
 
     // Texto forma pago
-    let txtPago = "Efec / Trans";
+    let txtPago = "Ef / Trans";
     if (pagoSel === "debito") txtPago = `Débito (+${porcentaje}%)`;
     if (pagoSel === "credito") txtPago = `Crédito (+${porcentaje}%)`;
 
@@ -480,7 +518,7 @@ function initIndex() {
     if (cantidadItems === 0) return alert("Carrito vacío");
 
     // Texto pago para ticket
-    let txtPago = "Efec / Trans";
+    let txtPago = "Ef/Trans";
     if (pagoSel === "debito") txtPago = "Débito";
     if (pagoSel === "credito") txtPago = "Crédito";
 
